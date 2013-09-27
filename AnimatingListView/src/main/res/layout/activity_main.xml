@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    tools:context=".MainActivity"
+    android:background="#B4B4B4">
+<LinearLayout
+  android:layout_width="match_parent"
+  android:layout_height="wrap_content">
+  <Button
+    android:id="@+id/shrink"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+      android:text="Shrink"/>
+  <Button
+      android:id="@+id/grow"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:text="Grow"/>
+
+  </LinearLayout>
+
+  <com.couchsurfing.animatinglistview.AnimatingListView
+      android:id="@+id/list"
+      android:layout_width="match_parent"
+      android:layout_alignParentBottom="true"
+      android:layout_height="150dp"/>
+
+
+
+</RelativeLayout>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <eat-comment/>
+
+
+  <declare-styleable name="AnimatingListView">
+    <attr name="animation_duration" format="integer"/>
+  </declare-styleable>
+
+</resources>
