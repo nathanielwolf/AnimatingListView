@@ -25,13 +25,13 @@ public class MainActivity extends Activity {
     grow.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
-        list.animateBy(200);
+        list.animateBy(100);
       }
     });
     shrink.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
-        list.animateBy(-200);
+        list.animateBy(-100);
       }
     });
   }
