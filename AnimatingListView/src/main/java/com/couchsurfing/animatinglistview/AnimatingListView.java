@@ -26,18 +26,12 @@ public class AnimatingListView extends FrameLayout {
   private int animDuration;
   private int[] childHeights;
   private int listContentsHeight;
-  // private AnimateState animateState;
   private int targetHeight;
-  //private Bitmap screenShot;
   private long startTime;
   private int startHeight;
   private ListView listView;
   Handler handler = new Handler();
 
-  private int counter;
-  private int screenShotTranslateY;
-  private boolean settingUp;
-  private AnimatingViewCapture listCaptureTemp;
   private AnimatingViewCapture listCapture;
   private int scrollToAfterAnim;
 
@@ -59,10 +53,10 @@ public class AnimatingListView extends FrameLayout {
 
     TypedArray a =
         context.getTheme().obtainStyledAttributes(attrs, R.styleable.AnimatingListView, 0, 0);
-    int defaultDuration = getResources().getInteger(android.R.integer.config_mediumAnimTime);
-    animDuration = a.getInteger(R.styleable.AnimatingListView_animation_duration, defaultDuration);
     try {
-
+      int defaultDuration = getResources().getInteger(android.R.integer.config_mediumAnimTime);
+      animDuration =
+          a.getInteger(R.styleable.AnimatingListView_animation_duration, defaultDuration);
     } finally {
       a.recycle();
     }
@@ -73,9 +67,6 @@ public class AnimatingListView extends FrameLayout {
     listView = new ListView(context);
     listView.setLayoutParams(params);
     listView.setBackgroundColor(Color.WHITE);
-    listView.setDivider(null);
-    listView.setDividerHeight(0);
-
 
     addView(listView);
     //addView(screenShotView);
@@ -84,6 +75,11 @@ public class AnimatingListView extends FrameLayout {
 
   public void setAdapter(ListAdapter adapter) {
     listView.setAdapter(adapter);
+    measureList();
+  }
+
+  private void measureList(){
+    ListAdapter adapter = listView.getAdapter();
     childHeights = new int[adapter.getCount()];
     if (adapter == null) {
       listContentsHeight = 0;
@@ -96,26 +92,13 @@ public class AnimatingListView extends FrameLayout {
       view.measure(MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED),
           MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
 
-      childHeights[i] = view.getMeasuredHeight();
+      childHeights[i] = view.getMeasuredHeight() +  (i < adapter.getCount()-1?listView.getDividerHeight():0);
       listContentsHeight += childHeights[i];
     }
   }
 
   public void animateBy(int offset) {
-
     animateTo(getHeight() + offset);
-    //repositionList(offset);
-    //getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-    //  @Override public boolean onPreDraw() {
-    //    getViewTreeObserver().removeOnPreDrawListener(this);
-    //    //   resizeListToTarget();
-    //    Log.d("@@@","PRE CAPURE");
-    //   captureListBitmap();
-    //   // beginAnimation();
-    //    return false;
-    //  }
-    //});
-
   }
 
   public void animateTo(int targetHeight) {
@@ -136,7 +119,6 @@ public class AnimatingListView extends FrameLayout {
     //Y coordinates for the source (bitmap) and destination (view) that will be animated between
     int srcStartY, srcEndY, dstStartY, dstEndY;
 
-    //listView.setVisibility(View.GONE);
     if (delta > 0) {//the list is growing
 
       //set the source and destination drawing values values
@@ -150,8 +132,7 @@ public class AnimatingListView extends FrameLayout {
 
       //The list need to be scrolled before capture
       if (scrollBy != 0) {
-        listCapture =
-            new AnimatingViewCapture(null, srcStartY, srcEndY, dstStartY, dstEndY);
+        listCapture = new AnimatingViewCapture(null, srcStartY, srcEndY, dstStartY, dstEndY);
         repositionList(scrollPosition + scrollBy);
         //listen for the scroll to complete before beginning capturing and starting the animation
         getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
@@ -159,18 +140,17 @@ public class AnimatingListView extends FrameLayout {
             getViewTreeObserver().removeOnPreDrawListener(this);
             getLayoutParams().height = AnimatingListView.this.targetHeight;
             resizeListToTarget();
-            listCapture.bitmap =captureListBitmap();
+            listCapture.bitmap = captureListBitmap();
             listView.setVisibility(View.GONE);
             beginAnimation();
             return false;
           }
         });
         return;
-
       }
+
       getLayoutParams().height = targetHeight;
       resizeListToTarget();
-
     } else { //the list is shrinking
       srcStartY = 0;
       dstStartY = 0;
@@ -188,17 +168,13 @@ public class AnimatingListView extends FrameLayout {
       }
 
       //the list must be scrolled up after the size has changed
-      scrollToAfterAnim =
-          scrollPosition + srcEndY-srcStartY;
+      scrollToAfterAnim = scrollPosition + srcEndY - srcStartY;
       //beginAnimation();
     }
     listView.setVisibility(View.GONE);
-
     listCapture =
         new AnimatingViewCapture(captureListBitmap(), srcStartY, srcEndY, dstStartY, dstEndY);
     beginAnimation();
-
-    //Log.i("@@@", "createBitmap START: " + (System.currentTimeMillis() - startTime));
   }
 
   private void repositionList(int scrollToY) {
@@ -210,7 +186,6 @@ public class AnimatingListView extends FrameLayout {
         return;
       }
       sum += childHeights[i];
-
     }
   }
 
@@ -220,15 +195,11 @@ public class AnimatingListView extends FrameLayout {
   }
 
   private Bitmap captureListBitmap() {
-    Log.i("@@@", "*************");
-    Log.i("@@@", "LIST pos:" + listView.getFirstVisiblePosition()+ "| top:" + listView.getChildAt(0).getTop());
-    Log.i("@@@", "*************");
     Bitmap bitmap =
         Bitmap.createBitmap(listView.getWidth(), listView.getHeight(), Bitmap.Config.ARGB_8888);
     Canvas c = new Canvas(bitmap);
     listView.draw(c);
 
-    settingUp = false;
     return bitmap;
   }
 
@@ -237,17 +208,15 @@ public class AnimatingListView extends FrameLayout {
       listCapture.recycle();
       listCapture = null;
     }
-    listView.setVisibility(View.VISIBLE);
 
-    //when shrinking, the view must resize at the end
+    //when shrinking, the view must resize at the end, after it's resized
     if (startHeight > targetHeight) {
       getLayoutParams().height = targetHeight;
-      listView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+      getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
         @Override public boolean onPreDraw() {
-          listView.getViewTreeObserver().removeOnPreDrawListener(this);
+          getViewTreeObserver().removeOnPreDrawListener(this);
           if (scrollToAfterAnim > 0) {
-            Log.i("@@@", "SCROLL AFTER " + scrollToAfterAnim);
-           repositionList(scrollToAfterAnim);
+            repositionList(scrollToAfterAnim);
             scrollToAfterAnim = 0;
           }
           return false;
@@ -255,17 +224,15 @@ public class AnimatingListView extends FrameLayout {
       });
     }
 
-    requestLayout();
+    //this will generate a layout call
+    listView.setVisibility(View.VISIBLE);
   }
 
   @Override protected void onDraw(Canvas canvas) {
-    //Log.i("@@@", "onDraw START: " + (System.currentTimeMillis() - startTime));
     super.onDraw(canvas);
     if (listCapture != null) {
       listCapture.draw(canvas);
     }
-
-    //Log.i("@@@", "onDraw END: " + (System.currentTimeMillis() - startTime));
   }
 
   /**
@@ -297,8 +264,8 @@ public class AnimatingListView extends FrameLayout {
       //Stop the animation if time has expired
       if (System.currentTimeMillis() - startTime > animDuration) {
         endAnimation();
-      } else {
-        invalidate(); //create a redraw and continue animation
+      } else { //continue animation
+        invalidate();
         handler.postDelayed(this, FRAME_RATE);
       }
     }
@@ -331,7 +298,7 @@ public class AnimatingListView extends FrameLayout {
      */
     void draw(Canvas canvas) {
 
-      //statTime is before the animation has started, so draw the initial state
+      //statTime == -1 means this is before the animation has started, so draw the initial state
       float input = startTime == -1 ? 0f
           : (float) (System.currentTimeMillis() - startTime) / (float) animDuration;
 
@@ -351,12 +318,6 @@ public class AnimatingListView extends FrameLayout {
       Rect dst = new Rect(0, dstY, bitmap.getWidth(), dstY + src.height());
 
       canvas.drawBitmap(bitmap, src, dst, null);
-      //
-      //Log.i("@@@", "_______________________________________");
-      //Log.i("@@@", "input:" + input + "|interpolateValue:" + interpolateValue);
-      //Log.i("@@@", "**SRC :" + srcY + " | start:" + srcStartY + " end:" + srcEndY);
-      //Log.i("@@@", "***DST " + dstY + " | start:" + dstStartY + " end:" + dstEndY);
-      //Log.i("@@@", "***HEI src:" + src.height() + " | dst:" + dst.height()+" | view:"+getHeight()+" | bitmap:"+bitmap.getHeight());
     }
   }
 }
