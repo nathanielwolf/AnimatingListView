@@ -39,6 +39,8 @@ public class AnimatingListView extends ListView {
   private boolean scrollBeforeCapture;
   private boolean capturing;
 
+  private AnimatingListListener listener;
+
   public AnimatingListView(Context context) {
     super(context);
   }
@@ -87,6 +89,14 @@ public class AnimatingListView extends ListView {
    */
   public long getAnimationDuration() {
     return animDuration;
+  }
+
+  public AnimatingListListener getListener() {
+    return listener;
+  }
+
+  public void setListener(AnimatingListListener listener) {
+    this.listener = listener;
   }
 
   @Override
@@ -243,6 +253,9 @@ public class AnimatingListView extends ListView {
     }
 
     //start the animation
+    if(listener != null){
+      listener.onAnimationBegin();
+    }
     handler.postDelayed(new AnimatorRunnable(), 0);
   }
 
@@ -265,28 +278,38 @@ public class AnimatingListView extends ListView {
       animatingDrawable = null;
     }
 
-    //when shrinking, the view must be scrolled and resize at the end
-    if (startHeight > targetHeight) {
-      getLayoutParams().height = targetHeight;
-      getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-        @Override public boolean onPreDraw() {
-          getViewTreeObserver().removeOnPreDrawListener(this);
-          if (scrollToAfterAnim > 0) {
-            repositionList(scrollToAfterAnim);
-            scrollToAfterAnim = 0;
-          }
-          return false;
-        }
-      });
-    }
-
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
       setBackground(cachedBackground);
     } else {
       setBackgroundDrawable(cachedBackground);
     }
 
+    //when shrinking, the view must be scrolled and resize at the end
+    if (startHeight > targetHeight) {
+      getLayoutParams().height = targetHeight;
+      getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+        @Override public boolean onPreDraw() {
+          if (scrollToAfterAnim > 0) {
+            repositionList(scrollToAfterAnim);
+            scrollToAfterAnim = 0;
+            return false;
+          }
+          getViewTreeObserver().removeOnPreDrawListener(this);
+          if(listener != null){
+            listener.onAnimationEnd();
+          }
+
+          return false;
+        }
+      });
+    } else {
+      if(listener != null){
+        listener.onAnimationEnd();
+      }
+    }
+
     requestLayout();
+
   }
 
   @Override protected void onDraw(Canvas canvas) {
@@ -403,5 +426,10 @@ public class AnimatingListView extends ListView {
     @Override public int getOpacity() {
       return PixelFormat.OPAQUE;
     }
+  }
+
+  public interface AnimatingListListener{
+    void onAnimationBegin();
+    void onAnimationEnd();
   }
 }
